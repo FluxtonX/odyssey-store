@@ -52,13 +52,13 @@ export default function GlassNavbar() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-            <Link href="/" className="hover:text-gray-900 transition-colors cursor-pointer">Story</Link>
+            <Link href="/" className="hover:text-gray-900 transition-colors cursor-pointer">Home</Link>
             <Link href="/product" className="hover:text-gray-900 transition-colors cursor-pointer flex items-center gap-1.5">
               <span>Recording Glasses</span>
               <span className="px-2 py-0.5 rounded-full bg-[#10B981]/10 text-[#10B981] text-[10px] font-bold uppercase">In Stock</span>
             </Link>
-            <a href="#specs" className="hover:text-gray-900 transition-colors cursor-pointer">Specifications</a>
-            <a href="#faq" className="hover:text-gray-900 transition-colors cursor-pointer">FAQ</a>
+            <Link href="/specs" className="hover:text-gray-900 transition-colors cursor-pointer">Specifications</Link>
+            <Link href="/faq" className="hover:text-gray-900 transition-colors cursor-pointer">FAQ</Link>
           </nav>
 
           {/* Action CTAs */}
@@ -123,7 +123,7 @@ export default function GlassNavbar() {
 
             <nav className="flex flex-col gap-6 py-8">
               <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-bold text-gray-900 hover:text-[#2563EB] transition">
-                Product Story
+                Home
               </Link>
               <Link href="/product" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-bold text-[#2563EB] flex items-center justify-between">
                 <span>Recording Glasses</span>

@@ -57,11 +57,7 @@ export default function ProductCustomizerPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Image Gallery Viewer */}
           <div className="lg:col-span-7 space-y-6 lg:sticky lg:top-28">
-            <div className="bg-[#F8F9FB] p-6 sm:p-10 rounded-3xl border border-gray-200 relative overflow-hidden flex items-center justify-center min-h-[380px] sm:min-h-[480px]">
-              <span className="absolute top-4 left-4 px-3 py-1 rounded-full bg-white border border-gray-200 text-gray-800 text-xs font-semibold shadow-xs">
-                {selectedVariant.colorName}
-              </span>
-
+            <div className="bg-[#F8F9FB] rounded-3xl border border-gray-200 relative overflow-hidden flex items-center justify-center min-h-[380px] sm:min-h-[480px]">
               <motion.img
                 key={`${selectedProduct.id}-${selectedVariant.id}-${activeImageKey}`}
                 initial={{ opacity: 0, scale: 0.96 }}
@@ -69,7 +65,7 @@ export default function ProductCustomizerPage() {
                 transition={{ duration: 0.3 }}
                 src={selectedProduct.images[activeImageKey]}
                 alt={selectedProduct.name}
-                className="max-h-[360px] w-auto object-contain drop-shadow-[0_15px_35px_rgba(0,0,0,0.08)]"
+                className="absolute inset-0 w-full h-full object-cover drop-shadow-[0_15px_35px_rgba(0,0,0,0.08)]"
               />
             </div>
 
@@ -116,108 +112,31 @@ export default function ProductCustomizerPage() {
 
           {/* Right Column: Customizer Selector */}
           <div className="lg:col-span-5 space-y-8">
-            {/* Step 1: Model Selection */}
+            {/* Storage Selection */}
             <div className="space-y-3">
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
-                1. Select Glasses Model
+                Select Storage Capacity
               </label>
-              <div className="grid grid-cols-1 gap-3">
-                {RECORDING_GLASSES_PRODUCTS.map((prod) => (
-                  <button
-                    key={prod.id}
-                    onClick={() => handleProductChange(prod)}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between bg-white ${
-                      selectedProduct.id === prod.id
-                        ? "border-[#2563EB] bg-[#2563EB]/5 shadow-xs"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div>
-                      <span className="font-bold text-sm text-gray-900 block">{prod.name}</span>
-                      <span className="text-xs text-gray-500 font-normal">{prod.specs.videoResolution}</span>
-                    </div>
-                    <span className="font-bold text-sm text-[#2563EB]">${prod.basePrice}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 2: Color Variant Selection */}
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
-                2. Select Finish: <span className="text-gray-900 font-bold">{selectedVariant.colorName}</span>
-              </label>
-              <div className="flex gap-3">
-                {selectedProduct.variants.map((v) => (
-                  <button
-                    key={v.id}
-                    onClick={() => setSelectedVariant(v)}
-                    className={`flex-1 p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-2 bg-white ${
-                      selectedVariant.id === v.id
-                        ? "border-[#2563EB] bg-[#2563EB]/5 ring-2 ring-[#2563EB]/20"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="w-6 h-6 rounded-full border border-gray-300 shadow-xs" style={{ backgroundColor: v.colorHex }} />
-                    <span className="text-xs font-semibold text-gray-800">{v.colorName}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 3: Storage Selection */}
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
-                3. Storage Capacity
-              </label>
-              <div className="grid grid-cols-1 gap-2.5">
-                {selectedProduct.storageOptions.map((st) => (
-                  <button
-                    key={st.id}
-                    onClick={() => setSelectedStorage(st)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between bg-white ${
-                      selectedStorage.id === st.id
-                        ? "border-[#2563EB] bg-[#2563EB]/5 text-gray-900"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    <div>
-                      <span className="font-bold text-xs text-gray-900 block">{st.size}</span>
-                      <span className="text-[11px] text-gray-500 font-normal">{st.description}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-[#2563EB]">
-                      {st.priceAdd === 0 ? "Included" : `+$${st.priceAdd}`}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Step 4: Lens Type Selection */}
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700">
-                4. Select Optics & Lens Coating
-              </label>
-              <div className="grid grid-cols-1 gap-2.5">
-                {selectedProduct.lensOptions.map((ln) => (
-                  <button
-                    key={ln.id}
-                    onClick={() => setSelectedLens(ln)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between bg-white ${
-                      selectedLens.id === ln.id
-                        ? "border-[#2563EB] bg-[#2563EB]/5 text-gray-900"
-                        : "border-gray-200 text-gray-600 hover:border-gray-300"
-                    }`}
-                  >
-                    <div>
-                      <span className="font-bold text-xs text-gray-900 block">{ln.name}</span>
-                      <span className="text-[11px] text-gray-500 font-normal">{ln.type}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-[#2563EB]">
-                      {ln.priceAdd === 0 ? "Included" : `+$${ln.priceAdd}`}
-                    </span>
-                  </button>
-                ))}
+              <div className="relative">
+                <select
+                  value={selectedStorage.id}
+                  onChange={(e) => {
+                    const st = selectedProduct.storageOptions.find(s => s.id === e.target.value);
+                    if(st) setSelectedStorage(st);
+                  }}
+                  className="w-full appearance-none p-4 rounded-2xl border border-gray-200 bg-white text-gray-900 font-semibold cursor-pointer outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 transition-all text-sm"
+                >
+                  {selectedProduct.storageOptions.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.size} - {st.description} ({st.priceAdd === 0 ? "Included" : `+$${st.priceAdd}`})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-500">
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
               </div>
             </div>
 

@@ -1,130 +1,209 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, MouseEvent as ReactMouseEvent, useEffect } from "react";
 import { RecordingGlassesProduct, GlassesVariant } from "@/data/products";
-import { Star, ShoppingBag } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Star, ShoppingBag, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import Link from "next/link";
 
 interface ProductCardProps {
   product: RecordingGlassesProduct;
   onQuickAdd: (product: RecordingGlassesProduct, variant: GlassesVariant) => void;
-  onSelectProduct?: (product: RecordingGlassesProduct) => void;
 }
 
 export default function ProductCard({ product, onQuickAdd }: ProductCardProps) {
   const [selectedVariant, setSelectedVariant] = useState<GlassesVariant>(product.variants[0]);
-  const [activeAngle, setActiveAngle] = useState<"hero" | "front" | "side" | "lifestyle">("hero");
+  
+  const angles = ["hero", "front", "side", "lifestyle"] as const;
+  const [activeAngleIndex, setActiveAngleIndex] = useState(0);
+  const activeAngle = angles[activeAngleIndex];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveAngleIndex((prev) => (prev + 1) % angles.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // --- 3D Tilt Physics ---
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Spring physics for natural feel (not linear)
+  const springConfig = { stiffness: 150, damping: 15, mass: 0.5 };
+  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [8, -8]), springConfig);
+  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-8, 8]), springConfig);
+
+  // Dynamic shadow movement follows tilt
+  const shadowX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-15, 15]), springConfig);
+  const shadowY = useSpring(useTransform(mouseY, [-0.5, 0.5], [-15, 15]), springConfig);
+
+  // Reflection sweep position follows mouse
+  const reflectionX = useSpring(useTransform(mouseX, [-0.5, 0.5], [-120, 120]), { stiffness: 80, damping: 20 });
+
+  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(x);
+    mouseY.set(y);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+    setIsHovered(false);
+  };
 
   return (
     <motion.div
-      whileHover={{ y: -6, scale: 1.015 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="bg-white rounded-3xl border border-gray-200/90 overflow-hidden flex flex-col justify-between group shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_50px_rgba(37,99,235,0.12)] hover:border-[#2563EB]/40 relative transition-all duration-300"
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: "preserve-3d",
+        transformPerspective: 1200,
+      }}
+      whileTap={{ scale: 0.985 }}
+      className="relative rounded-3xl overflow-hidden cursor-pointer"
     >
-      {/* Light Reflection Sweep Effect on Hover */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 pointer-events-none z-20" />
+      {/* Dynamic Shadow Layer */}
+      <motion.div
+        style={{
+          x: shadowX,
+          y: shadowY,
+        }}
+        className="absolute -inset-2 rounded-3xl -z-10 transition-opacity duration-300"
+        animate={{
+          boxShadow: isHovered
+            ? "0 25px 60px rgba(37, 99, 235, 0.15), 0 10px 25px rgba(0, 0, 0, 0.06)"
+            : "0 4px 20px rgba(0, 0, 0, 0.04)",
+        }}
+        transition={{ duration: 0.3 }}
+      />
 
-      {/* Media Container - Fully Covered Image Box (Zero awkward empty spacing!) */}
-      <div className="relative w-full h-64 sm:h-72 bg-[#F8F9FB] border-b border-gray-100 overflow-hidden flex items-center justify-center">
-        {/* Badge */}
-        <div className="absolute top-4 left-4 z-10">
-          <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-gray-200 text-gray-900 text-xs font-semibold shadow-xs">
-            {product.badge}
-          </span>
-        </div>
+      {/* Main Card Body */}
+      <div className={`bg-white rounded-3xl border overflow-hidden flex flex-col transition-colors duration-300 ${isHovered ? "border-[#2563EB]/30" : "border-gray-200"}`}>
+        {/* Lens Reflection Sweep */}
+        <motion.div
+          style={{ x: reflectionX }}
+          className="absolute inset-0 z-30 pointer-events-none"
+        >
+          <div className="w-32 h-full bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+        </motion.div>
 
-        {/* Fully Covered Product Image */}
-        <AnimatePresence mode="wait">
-          <motion.img
-            key={`${product.id}-${selectedVariant.id}-${activeAngle}`}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.04 }}
-            transition={{ duration: 0.3 }}
-            src={product.images[activeAngle]}
-            alt={`${product.name} - ${selectedVariant.colorName}`}
-            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-          />
-        </AnimatePresence>
+        {/* Border Glow on Hover */}
+        <motion.div
+          animate={{
+            opacity: isHovered ? 1 : 0,
+            boxShadow: isHovered ? "inset 0 0 0 1.5px rgba(37, 99, 235, 0.25)" : "inset 0 0 0 0px transparent",
+          }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-0 rounded-3xl z-20 pointer-events-none"
+        />
 
-        {/* Thumbnail Angle Selectors Bar */}
-        <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-center gap-1.5 p-1.5 rounded-full bg-white/80 backdrop-blur-md border border-gray-200 shadow-xs">
-          {[
-            { key: "hero", label: "Angle" },
-            { key: "front", label: "Front" },
-            { key: "side", label: "Temple" },
-            { key: "lifestyle", label: "Wear" },
-          ].map((angle) => (
-            <button
-              key={angle.key}
-              onClick={() => setActiveAngle(angle.key as any)}
-              className={`text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all cursor-pointer ${
-                activeAngle === angle.key
-                  ? "bg-[#2563EB] text-white shadow-xs"
-                  : "text-gray-700 hover:text-gray-900"
-              }`}
+        {/* --- Image Container --- */}
+        <div className="relative w-full aspect-[4/3] bg-gradient-to-b from-[#F8F9FB] to-[#F1F3F5] overflow-hidden">
+          {/* Badge */}
+          <div className="absolute top-4 left-4 z-10">
+            <motion.span
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="px-3 py-1.5 rounded-full bg-white/95 backdrop-blur-md border border-gray-200/80 text-gray-900 text-[11px] font-semibold shadow-sm"
             >
-              {angle.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Product Details & Variant Swatches */}
-      <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-gray-700 flex items-center gap-1">
-              <Star size={14} className="fill-[#F59E0B] text-[#F59E0B]" /> {product.rating} ({product.reviewsCount})
-            </span>
-            <span className="text-xs text-gray-500 font-medium">{product.specs.weight}</span>
+              {product.badge}
+            </motion.span>
           </div>
 
-          <h3 className="text-xl font-bold text-gray-900 group-hover:text-[#2563EB] transition-colors leading-snug">
+          {/* Product Image Slider */}
+          <motion.div 
+            className="flex w-full h-full"
+            animate={{ x: `-${activeAngleIndex * 100}%` }}
+            transition={{ type: "spring", stiffness: 200, damping: 25 }}
+          >
+            {angles.map((angle) => (
+              <div key={`${product.id}-${selectedVariant.id}-${angle}`} className="w-full h-full flex-shrink-0">
+                <img
+                  src={product.images[angle]}
+                  alt={`${product.name} - ${angle}`}
+                  className="w-full h-full object-cover object-center pointer-events-none select-none"
+                />
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Hover: subtle parallax image shift */}
+          <motion.div
+            style={{
+              x: useTransform(mouseX, [-0.5, 0.5], [-6, 6]),
+              y: useTransform(mouseY, [-0.5, 0.5], [-4, 4]),
+            }}
+            className="absolute inset-0 pointer-events-none"
+          />
+
+        </div>
+
+        {/* --- Product Details --- */}
+        <div className="p-6 space-y-4 flex-1 flex flex-col justify-between" style={{ transform: "translateZ(20px)" }}>
+          {/* Rating + Weight */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-600 flex items-center gap-1">
+              <Star size={13} className="fill-[#F59E0B] text-[#F59E0B]" />
+              {product.rating} <span className="text-gray-400">({product.reviewsCount})</span>
+            </span>
+            <span className="text-[11px] text-gray-400 font-medium">{product.specs.weight}</span>
+          </div>
+
+          {/* Product Name */}
+          <h3 className={`text-lg font-bold leading-snug transition-colors duration-200 ${isHovered ? "text-[#2563EB]" : "text-gray-900"}`}>
             {product.name}
           </h3>
 
-          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-normal">
+          {/* Description */}
+          <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
             {product.description}
           </p>
 
-          {/* Color Finish Swatches */}
-          <div className="pt-1 flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-gray-500 uppercase">Finish:</span>
-            <div className="flex gap-1.5">
-              {product.variants.map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => setSelectedVariant(v)}
-                  title={v.colorName}
-                  className={`w-5 h-5 rounded-full border transition-all cursor-pointer ${
-                    selectedVariant.id === v.id
-                      ? "ring-2 ring-[#2563EB] ring-offset-1 border-white"
-                      : "border-gray-300 opacity-70 hover:opacity-100"
-                  }`}
-                  style={{ backgroundColor: v.colorHex }}
-                />
-              ))}
+          {/* Divider */}
+          <div className="border-t border-gray-100" />
+
+          {/* Pricing + Actions */}
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-gray-900">${product.basePrice}</span>
+              <span className="text-xs text-gray-400 line-through">${product.originalPrice}</span>
             </div>
-            <span className="text-xs font-semibold text-gray-800 ml-1">{selectedVariant.colorName}</span>
-          </div>
-        </div>
 
-        {/* Pricing & Add to Bag Actions */}
-        <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div>
-            <span className="text-xs text-gray-400 line-through mr-2">${product.originalPrice}</span>
-            <span className="text-2xl font-bold text-gray-900">${product.basePrice}</span>
-          </div>
+            <div className="flex items-center gap-2">
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onQuickAdd(product, selectedVariant);
+                }}
+                whileHover={{ scale: 1.04, y: -1 }}
+                whileTap={{ scale: 0.96 }}
+                className="glass-button-primary px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5"
+              >
+                <ShoppingBag size={13} />
+                Add
+              </motion.button>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => onQuickAdd(product, selectedVariant)}
-              className="glass-button-primary px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer flex items-center gap-1.5"
-            >
-              <ShoppingBag size={14} />
-              <span>Add to Bag</span>
-            </button>
+              <Link href={`/product`}>
+                <motion.div
+                  whileHover={{ scale: 1.04, y: -1 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="p-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 hover:text-[#2563EB] hover:border-[#2563EB]/30 transition-colors cursor-pointer"
+                >
+                  <ArrowRight size={14} />
+                </motion.div>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
